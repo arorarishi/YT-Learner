@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Insights | AI Video Summarizer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/styles.css?v=2.1.2">
+    <style>
+        body {
+            overflow: hidden;
+            display: block;
+            height: 100vh;
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+        }
+
+        .details-container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+        }
+
+        .top-bar {
+            height: 64px;
+            background: rgba(10, 10, 15, 0.8);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--sidebar-border);
+            display: flex;
+            align-items: center;
+            padding: 0 1.5rem;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .video-title-editable {
+            font-size: 1.1rem;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 600px;
+        }
+
+        .main-split {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+            min-height: 0;
+        }
+
+        .left-col {
+            width: 45%;
+            border-right: 1px solid var(--card-border);
+            display: flex;
+            flex-direction: column;
+            background: rgba(0, 0, 0, 0.2);
+            min-height: 0;
+        }
+
+        .right-col {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-color);
+            min-height: 0;
+        }
+
+        .video-embed-container {
+            width: 100%;
+            aspect-ratio: 16/9;
+            background: #000;
+        }
+
+        .video-embed-container iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .transcript-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .section-tabs {
+            padding: 0.5rem 1.5rem;
+            border-bottom: 1px solid var(--card-border);
+            display: flex;
+            gap: 1.5rem;
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .section-tab {
+            padding: 0.8rem 0;
+            color: var(--text-secondary);
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .section-tab.active {
+            color: var(--accent-primary);
+        }
+
+        .section-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: var(--accent-primary);
+        }
+
+        .scrollable-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.5rem;
+            line-height: 1.6;
+        }
+
+        .timestamp-line {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .timestamp {
+            color: var(--accent-primary);
+            font-weight: 600;
+            font-size: 0.85rem;
+            min-width: 45px;
+        }
+
+        .transcript-text {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        /* Right Column Styles */
+        .insight-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 2.5rem;
+        }
+
+        .insight-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 2rem;
+        }
+
+        .insight-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .action-btns {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .action-btn-circle {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--card-border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--text-secondary);
+            transition: all 0.2s ease;
+        }
+
+        .action-btn-circle:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .tag-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 1.5rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="background-orbs">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+    </div>
+
+    <div class="app-layout">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1 class="sidebar-logo gradient-text">Summarizer</h1>
+                <button class="sidebar-toggle" id="sidebar-toggle">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" x2="21" y1="6" y2="6"/><line x1="3" x2="21" y1="12" y2="12"/><line x1="3" x2="21" y1="18" y2="18"/></svg>
+                </button>
+            </div>
+            <nav class="sidebar-nav">
+                <div class="nav-group">
+                    <h3 class="nav-label">Main</h3>
+                    <a href="/" class="sidebar-link">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                        <span class="sidebar-link-text">New Summary</span>
+                    </a>
+                    <a href="/library" class="sidebar-link">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
+                        <span class="sidebar-link-text">Library</span>
+                    </a>
+                    <a href="/playlists" class="sidebar-link">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15V6M18.5 18a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM12 12H3M16 6H3M12 18H3"/></svg>
+                        <span class="sidebar-link-text">Playlists</span>
+                    </a>
+                </div>
+
+                <div class="nav-group expandable-group open">
+                    <button class="sidebar-link expandable-trigger">
+                        <div style="display: flex; align-items: center; gap: 0.75rem;">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+                            <span class="sidebar-link-text">Video Insights</span>
+                        </div>
+                        <svg class="chevron-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+                    </button>
+                    <div class="expandable-content">
+                        <a href="#" class="sidebar-link sub-link active" data-type="summary"><span class="sidebar-link-text">Summary</span></a>
+                        <a href="#" class="sidebar-link sub-link" data-type="quiz"><span class="sidebar-link-text">Quiz</span></a>
+                        <a href="#" class="sidebar-link sub-link" data-type="study_notes"><span class="sidebar-link-text">Study Notes</span></a>
+                        <a href="#" class="sidebar-link sub-link" data-type="detailed_notes"><span class="sidebar-link-text">Detailed Notes</span></a>
+                        <a href="#" class="sidebar-link sub-link" data-type="flash_cards"><span class="sidebar-link-text">Flash Cards</span></a>
+                    </div>
+                </div>
+
+                <div class="nav-group expandable-group" id="decks-group">
+                    <button class="sidebar-link expandable-trigger">
+                        <div style="display: flex; align-items: center; gap: 0.75rem;">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                            <span class="sidebar-link-text">Study Decks</span>
+                        </div>
+                        <svg class="chevron-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+                    </button>
+                    <div class="expandable-content" id="sidebar-decks-list">
+                        <a href="/revision" class="sidebar-link sub-link">
+                            <span class="sidebar-link-text">Revision Hub</span>
+                        </a>
+                        <!-- Dynamic decks will be added here -->
+                    </div>
+                </div>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="details-container">
+                <header class="top-bar">
+                    <div id="header-title" class="video-title-editable">Loading Video Title...</div>
+                    <div class="top-right" style="display: flex; gap: 1rem;">
+                        <button class="secondary-btn">Share</button>
+                    </div>
+                </header>
+
+                <div class="main-split">
+                    <!-- Left Side: Player & Transcript -->
+                    <section class="left-col">
+                        <div class="video-embed-container">
+                            <iframe id="video-frame" src="" allowfullscreen></iframe>
+                        </div>
+                        <div class="transcript-section">
+                            <div class="section-tabs">
+                                <div class="section-tab active" data-panel="transcript">Transcript</div>
+                                <div class="section-tab" data-panel="description">Description</div>
+                            </div>
+                            <div id="transcript-container" class="scrollable-content">
+                                <!-- Timestamped transcript lines -->
+                            </div>
+                            <div id="description-container" class="scrollable-content hidden" style="color: var(--text-secondary); font-size: 0.95rem; line-height: 1.8; white-space: pre-wrap;">
+                                <!-- Video description -->
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Right Side: Insights -->
+                    <section class="right-col">
+                        <div class="insight-content">
+                            <div class="insight-header">
+                                <div class="view-controls" style="background: none; border: none; padding: 0;">
+                                    <button id="main-action-btn" class="primary-btn"
+                                        style="padding: 0.6rem 1.5rem;">Summarize</button>
+                                </div>
+                                <div class="action-btns">
+                                    <button class="action-btn-circle" title="Copy"><svg width="18" height="18"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                                        </svg></button>
+                                    <button id="download-anki-btn" class="action-btn-circle" title="Download to Anki"><svg width="18" height="18"
+                                             viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4" />
+                                             <polyline points="7 10 12 15 17 10" />
+                                             <line x1="12" x2="12" y1="15" y2="3" />
+                                         </svg></button>
+                                </div>
+                            </div>
+                            <div id="insight-body" class="insight-card markdown-body">
+                                <!-- Content will be rendered here -->
+                            </div>
+                            <div id="insight-tags" class="tag-list">
+                                <!-- Tags here -->
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const videoId = urlParams.get('v');
+
+            if (!videoId) {
+                window.location.href = '/library';
+                return;
+            }
+
+            const headerTitle = document.getElementById('header-title');
+            const videoFrame = document.getElementById('video-frame');
+            const transcriptContainer = document.getElementById('transcript-container');
+            const insightBody = document.getElementById('insight-body');
+            const insightTags = document.getElementById('insight-tags');
+            const mainActionBtn = document.getElementById('main-action-btn');
+
+            // Configurable delay for transcript display (in milliseconds)
+            const TRANSCRIPT_DELAY = 5000; 
+
+            let currentData = null;
+            let currentTab = urlParams.get('t') || 'summary';
+
+            // Sidebar Toggle Logic
+            const sidebar = document.querySelector('.sidebar');
+            const mainContent = document.querySelector('.main-content');
+            const toggleBtn = document.getElementById('sidebar-toggle');
+            
+            const setSidebarState = (collapsed) => {
+                if (collapsed) {
+                    sidebar.classList.add('collapsed');
+                    mainContent.classList.add('sidebar-collapsed');
+                } else {
+                    sidebar.classList.remove('collapsed');
+                    mainContent.classList.remove('sidebar-collapsed');
+                }
+                localStorage.setItem('sidebar-collapsed', collapsed);
+            };
+
+            // Init state
+            const isCollapsed = localStorage.getItem('sidebar-collapsed') === 'true';
+            setSidebarState(isCollapsed);
+
+            toggleBtn.addEventListener('click', () => {
+                const newState = !sidebar.classList.contains('collapsed');
+                setSidebarState(newState);
+            });
+
+            // Sidebar Expandable Logic
+            document.querySelectorAll('.expandable-trigger').forEach(trigger => {
+                trigger.addEventListener('click', () => {
+                    if (sidebar.classList.contains('collapsed')) {
+                        setSidebarState(false);
+                        setTimeout(() => {
+                            trigger.parentElement.classList.add('open');
+                        }, 100);
+                    } else {
+                        trigger.parentElement.classList.toggle('open');
+                    }
+                });
+            });
+
+            // Left-panel tab switching (Transcript / Description)
+            const descriptionContainer = document.getElementById('description-container');
+            document.querySelectorAll('.section-tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    document.querySelectorAll('.section-tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    const panel = tab.dataset.panel;
+                    if (panel === 'description') {
+                        transcriptContainer.classList.add('hidden');
+                        descriptionContainer.classList.remove('hidden');
+                    } else {
+                        descriptionContainer.classList.add('hidden');
+                        transcriptContainer.classList.remove('hidden');
+                    }
+                });
+            });
+
+            // Load Video Data
+            try {
+                const response = await fetch(`/api/video/${videoId}`);
+                currentData = await response.json();
+
+                headerTitle.textContent = currentData.title || 'Untitled Video';
+                videoFrame.src = `https://www.youtube.com/embed/${videoId}`;
+
+                descriptionContainer.textContent = currentData.description || 'No description available for this video.';
+
+                // Render Transcript with Delay
+                if (currentData.transcript_text) {
+                    transcriptContainer.innerHTML = '<div class="loader-container"><div class="loader"></div><p style="margin-top: 1rem;">Loading Transcript...</p></div>';
+                    setTimeout(() => {
+                        renderTranscript(currentData.transcript_text);
+                    }, TRANSCRIPT_DELAY);
+                } else {
+                    fetchTranscriptSeparately();
+                }
+
+                renderActiveInsight();
+            } catch (error) {
+                console.error('Error loading details:', error);
+            }
+
+            function renderTranscript(text) {
+                if (typeof text !== 'string') {
+                    transcriptContainer.innerHTML = '<p class="error-message">Invalid transcript data.</p>';
+                    return;
+                }
+                const lines = text.split('\n');
+                transcriptContainer.innerHTML = lines.map(line => {
+                    const match = line.match(/^\[(\d{2}:\d{2})\]\s(.*)/);
+                    if (match) {
+                        return `<div class="timestamp-line">
+                            <span class="timestamp">${match[1]}</span>
+                            <span class="transcript-text">${match[2]}</span>
+                        </div>`;
+                    }
+                    return `<div class="timestamp-line"><span class="transcript-text">${line}</span></div>`;
+                }).join('');
+            }
+
+            function renderActiveInsight() {
+                if (!currentData) return;
+
+                // Update Sidebar Active State
+                document.querySelectorAll('.sub-link').forEach(link => {
+                    link.classList.toggle('active', link.dataset.type === currentTab);
+                });
+
+                const colMap = {
+                    'summary': 'summary_text',
+                    'quiz': 'quiz_text',
+                    'study_notes': 'study_notes_text',
+                    'detailed_notes': 'detailed_notes_text',
+                    'flash_cards': 'flash_cards_text'
+                };
+                const colName = colMap[currentTab];
+                const content = currentData[colName];
+
+                const viewControls = document.querySelector('.view-controls');
+                const extraBtn = document.getElementById('extra-action-btn');
+                if (extraBtn) extraBtn.remove();
+
+                if (content && typeof content === 'string') {
+                    if (currentTab === 'flash_cards') {
+                        renderFlashCardsTable(videoId);
+                    } else {
+                        insightBody.innerHTML = marked.parse(content);
+                    }
+                    
+                    mainActionBtn.textContent = 'Regenerate';
+                    mainActionBtn.classList.add('secondary-btn');
+                    mainActionBtn.classList.remove('primary-btn');
+
+                    if (currentTab === 'flash_cards') {
+                        const reviseBtn = document.createElement('button');
+                        reviseBtn.id = 'extra-action-btn';
+                        reviseBtn.className = 'primary-btn';
+                        reviseBtn.style.marginLeft = '0.5rem';
+                        reviseBtn.style.padding = '0.6rem 1.5rem';
+                        reviseBtn.textContent = 'Revise Mode';
+                        reviseBtn.onclick = () => window.location.href = `/revise?v=${videoId}`;
+                        viewControls.appendChild(reviseBtn);
+                    }
+                } else {
+                    insightBody.innerHTML = `<div class="empty-state" style="text-align: center; padding: 3rem;">
+                        <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">No ${currentTab.replace('_', ' ')} generated yet.</p>
+                    </div>`;
+                    mainActionBtn.textContent = `Generate ${currentTab.replace('_', ' ')}`;
+                    mainActionBtn.classList.add('primary-btn');
+                    mainActionBtn.classList.remove('secondary-btn');
+                }
+
+                if (currentData.tags_text && typeof currentData.tags_text === 'string' && currentData.tags_text.trim() !== "") {
+                    insightTags.innerHTML = currentData.tags_text.split(',').map(tag => `<span class="tag-chip">${tag.trim()}</span>`).join('');
+                } else {
+                    insightTags.innerHTML = '';
+                }
+            }
+
+            async function renderFlashCardsTable(vId) {
+                insightBody.innerHTML = '<div class="loader-container"><div class="loader"></div><p>Loading structured cards...</p></div>';
+                try {
+                    const response = await fetch(`/api/video/${vId}/flashcards`);
+                    const cards = await response.json();
+                    
+                    if (cards && cards.length > 0) {
+                        const videoName = currentData.title || 'This Video';
+                        insightBody.innerHTML = `
+                            <div class="flashcard-table-container">
+                                <table class="flashcard-table">
+                                    <thead>
+                                        <tr>
+                                            <th class="col-video">Video Name</th>
+                                            <th class="col-front">Question / Front</th>
+                                            <th class="col-back">Answer / Back</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${cards.map(card => `
+                                            <tr>
+                                                <td class="col-video">${videoName}</td>
+                                                <td class="col-front">${card.front}</td>
+                                                <td class="col-back">${card.back}</td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        `;
+                    } else {
+                        insightBody.innerHTML = marked.parse(currentData.flash_cards_text);
+                    }
+                } catch (e) {
+                    console.error('Error fetching cards:', e);
+                    insightBody.innerHTML = marked.parse(currentData.flash_cards_text);
+                }
+            }
+
+            // Tab Switching via Sidebar
+            window.switchTab = (type) => {
+                currentTab = type;
+                renderActiveInsight();
+                // Update URL without reload
+                const newUrl = new URL(window.location);
+                newUrl.searchParams.set('t', type);
+                window.history.pushState({}, '', newUrl);
+            };
+
+            document.querySelectorAll('.sub-link').forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    switchTab(link.dataset.type);
+                });
+            });
+
+            mainActionBtn.addEventListener('click', () => {
+                generateInsight(currentTab);
+            });
+
+            window.generateInsight = async (type) => {
+                insightBody.innerHTML = '<div class="loader-container"><div class="loader"></div><p style="margin-top: 1rem;">Analyzing with AI...</p></div>';
+                
+                if (!currentData.transcript_text) {
+                    fetchTranscriptSeparately();
+                }
+
+                try {
+                    const response = await fetch('/api/summarize', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            url: `https://www.youtube.com/watch?v=${videoId}`,
+                            template_type: type,
+                            user_id: localStorage.getItem('yt_summarizer_user_id') || 'anonymous'
+                        })
+                    });
+                    const data = await response.json();
+                    
+                    if (data.transcript && !currentData.transcript_text) {
+                        currentData.transcript_text = data.transcript;
+                        setTimeout(() => {
+                            renderTranscript(currentData.transcript_text);
+                        }, TRANSCRIPT_DELAY);
+                    }
+
+                    const colMap = {
+                        'summary': 'summary_text',
+                        'quiz': 'quiz_text',
+                        'study_notes': 'study_notes_text',
+                        'detailed_notes': 'detailed_notes_text',
+                        'flash_cards': 'flash_cards_text'
+                    };
+                    currentData[colMap[type]] = data.summary;
+                    currentData.tags_text = data.tags;
+                    renderActiveInsight();
+                } catch (error) {
+                    insightBody.innerHTML = '<p class="error-message">Failed to generate insights.</p>';
+                }
+            };
+
+            async function fetchTranscriptSeparately() {
+                transcriptContainer.innerHTML = '<div class="loader-container"><div class="loader"></div><p style="margin-top: 1rem;">Fetching Subtitles...</p></div>';
+                try {
+                    const response = await fetch(`/api/video/${videoId}/transcript?url=https://www.youtube.com/watch?v=${videoId}`);
+                    const data = await response.json();
+                    if (data.transcript) {
+                        currentData.transcript_text = data.transcript;
+                        setTimeout(() => {
+                            renderTranscript(currentData.transcript_text);
+                        }, TRANSCRIPT_DELAY);
+                    } else {
+                        transcriptContainer.innerHTML = '<p class="error-message">No transcript available.</p>';
+                    }
+                } catch (e) {
+                    transcriptContainer.innerHTML = '<p class="error-message">Failed to load transcript.</p>';
+                }
+            }
+
+            const downloadAnkiBtn = document.getElementById('download-anki-btn');
+            if (downloadAnkiBtn) {
+                downloadAnkiBtn.addEventListener('click', () => {
+                    if (currentTab === 'flash_cards') {
+                        window.location.href = `/api/video/${videoId}/export/anki`;
+                    } else {
+                        alert("Download only available for Flash Cards in Anki format currently.");
+                    }
+                });
+            }
+
+            // Global Sidebar Deck Loader
+            async function loadSidebarDecks() {
+                const list = document.getElementById('sidebar-decks-list');
+                if (!list) return;
+                try {
+                    const response = await fetch('/api/revision/stats');
+                    const videos = await response.json();
+                    if (videos && videos.length > 0) {
+                        // Keep Revision Hub link, append others
+                        const hubLink = list.querySelector('a[href="/revision"]');
+                        list.innerHTML = '';
+                        list.appendChild(hubLink);
+                        
+                        videos.slice(0, 5).forEach(v => {
+                            const a = document.createElement('a');
+                            a.href = `/revise?v=${v.video_id}`;
+                            a.className = 'sidebar-link sub-link';
+                            a.style.fontSize = '0.75rem';
+                            a.style.whiteSpace = 'nowrap';
+                            a.style.overflow = 'hidden';
+                            a.style.textOverflow = 'ellipsis';
+                            a.title = v.title;
+                            a.innerHTML = `<span class="sidebar-link-text">${v.title || 'Untitled'}</span>`;
+                            list.appendChild(a);
+                        });
+                    }
+                } catch (e) {
+                    console.error('Error loading sidebar decks:', e);
+                }
+            }
+            loadSidebarDecks();
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,11 @@
+name: "Flash Cards"
+description: "Extracts key concepts and formats them as Front/Back flashcards."
+version: "1.0"
+prompt: >
+  You are an expert flashcard generator. Extract the most important concepts from the following YouTube video transcript and convert them into flashcards. 
+  Format each flashcard exactly like this:
+  **Front:** [Question or Concept]
+  **Back:** [Answer or Definition]
+
+  At the very end of your response, provide 3-5 tags for this content, preceded by the keyword [TAGS]:
+  Example: [TAGS]: AI, machine learning, transformers

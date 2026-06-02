@@ -1,0 +1,22 @@
+name: "Detailed Notes"
+description: "Comprehensive, timestamped notes covering every major point and detail from the video."
+version: "1.1"
+prompt: >
+  You are an expert transcriber and note-taker. Your goal is to provide a highly detailed, comprehensive set of notes for the following YouTube video transcript. 
+  Unlike a summary, these notes should NOT miss any significant points, examples, or data mentioned.
+
+  Please follow these strict guidelines:
+  1. Organize the notes chronologically using [MM:SS] or [HH:MM:SS] timestamps for every new topic or important point.
+  2. Use a hierarchical structure with bold headings for major sections and bullet points for supporting details.
+  3. Include specific examples, names, dates, and technical terms used by the speaker.
+  4. If the speaker provides a list or a step-by-step process, capture it exactly.
+  5. Ensure the notes are granular enough that someone could understand the entire depth of the video without watching it.
+  6. DO NOT aim for brevity. Aim for completeness and accuracy.
+
+  Format:
+  # [Section Title]
+  - [Timestamp] **Key Point**: Detailed explanation...
+  - [Timestamp] **Supporting Detail**: Further context...
+  
+  At the very end of your response, provide 3-5 tags for this content, preceded by the keyword [TAGS]:
+  Example: [TAGS]: AI, machine learning, transformers

@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flash Card Revision | AI Video Summarizer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/styles.css?v=2.1.2">
+    <style>
+        .revision-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            min-height: 80vh;
+            justify-content: center;
+        }
+
+        /* Flashcard Component */
+        .flashcard-scene {
+            width: 100%;
+            height: 400px;
+            perspective: 2000px;
+            cursor: pointer;
+        }
+
+        .flashcard {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transform-style: preserve-3d;
+        }
+
+        .flashcard.is-flipped {
+            transform: rotateY(180deg);
+        }
+
+        .flashcard-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem;
+            border-radius: 32px;
+            text-align: center;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--card-border);
+        }
+
+        .flashcard-front {
+            background: linear-gradient(145deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.9));
+        }
+
+        .flashcard-back {
+            background: linear-gradient(145deg, rgba(30, 58, 138, 0.9), rgba(30, 41, 59, 0.9));
+            transform: rotateY(180deg);
+        }
+
+        .card-label {
+            position: absolute;
+            top: 2rem;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            color: var(--text-secondary);
+            font-weight: 800;
+        }
+
+        .card-text {
+            font-size: 1.75rem;
+            font-weight: 600;
+            line-height: 1.4;
+            color: var(--text-primary);
+        }
+
+        /* Progress Bar */
+        .progress-section {
+            width: 100%;
+            margin-top: 2rem;
+        }
+
+        .progress-meta {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.75rem;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .progress-bar-bg {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: var(--accent-gradient);
+            width: 0%;
+            transition: width 0.4s ease;
+        }
+
+        /* Controls */
+        .card-controls {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .control-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--card-border);
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--text-secondary);
+            transition: all 0.2s ease;
+        }
+
+        .control-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+            transform: scale(1.1);
+        }
+
+        .control-btn.primary {
+            background: var(--accent-gradient);
+            color: white;
+            border: none;
+            width: 80px;
+            height: 80px;
+        }
+
+        .keyboard-hint {
+            text-align: center;
+            margin-top: 2rem;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            opacity: 0.6;
+        }
+
+        .hint-key {
+            padding: 0.2rem 0.5rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            margin: 0 0.3rem;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="background-orbs">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+
+    <div class="app-layout">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1 class="sidebar-logo gradient-text">Summarizer</h1>
+                <button class="sidebar-toggle" id="sidebar-toggle">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" x2="21" y1="6" y2="6"/><line x1="3" x2="21" y1="12" y2="12"/><line x1="3" x2="21" y1="18" y2="18"/></svg>
+                </button>
+            </div>
+            <nav class="sidebar-nav">
+                <div class="nav-group">
+                    <h3 class="nav-label">Main</h3>
+                    <a href="/" class="sidebar-link">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                        <span class="sidebar-link-text">New Summary</span>
+                    </a>
+                    <a href="/library" class="sidebar-link">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
+                        <span class="sidebar-link-text">Library</span>
+                    </a>
+                    <a href="/playlists" class="sidebar-link">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15V6M18.5 18a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM12 12H3M16 6H3M12 18H3"/></svg>
+                        <span class="sidebar-link-text">Playlists</span>
+                    </a>
+                </div>
+                <div class="nav-group expandable-group" id="decks-group">
+                    <button class="sidebar-link expandable-trigger">
+                        <div style="display: flex; align-items: center; gap: 0.75rem;">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                            <span class="sidebar-link-text">Study Decks</span>
+                        </div>
+                        <svg class="chevron-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+                    </button>
+                    <div class="expandable-content" id="sidebar-decks-list">
+                        <a href="/revision" class="sidebar-link sub-link active">
+                            <span class="sidebar-link-text">Revision Hub</span>
+                        </a>
+                        <!-- Dynamic decks will be added here -->
+                    </div>
+                </div>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="revision-container">
+                <div id="loader" class="loader-container" style="text-align: center;">
+                    <div class="loader" style="margin: 0 auto;"></div>
+                    <p style="margin-top: 1.5rem; color: var(--text-secondary);">Preparing your study deck...</p>
+                </div>
+
+                <div id="study-deck" class="hidden">
+                    <div class="progress-section">
+                        <div class="progress-meta">
+                            <span id="progress-text">Card 1 of 10</span>
+                            <span id="progress-percent">10% Complete</span>
+                        </div>
+                        <div class="progress-bar-bg">
+                            <div id="progress-fill" class="progress-bar-fill"></div>
+                        </div>
+                    </div>
+
+                    <div class="flashcard-scene">
+                        <div class="flashcard" id="card">
+                            <div class="flashcard-face flashcard-front">
+                                <span class="card-label">Question</span>
+                                <div class="card-text" id="front-text">What is the capital of France?</div>
+                            </div>
+                            <div class="flashcard-face flashcard-back">
+                                <span class="card-label">Answer</span>
+                                <div class="card-text" id="back-text">Paris</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card-controls">
+                        <button class="control-btn" id="prev-btn" title="Previous">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+                        </button>
+                        <button class="control-btn primary" id="flip-btn" title="Flip Card">
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+                        </button>
+                        <button class="control-btn" id="next-btn" title="Next">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+                        </button>
+                    </div>
+
+                    <div class="keyboard-hint">
+                        Use <span class="hint-key">Space</span> to flip, <span class="hint-key">←</span> <span class="hint-key">→</span> to navigate
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const videoId = urlParams.get('v');
+
+            if (!videoId) {
+                window.location.href = '/revision';
+                return;
+            }
+
+            const studyDeck = document.getElementById('study-deck');
+            const loader = document.getElementById('loader');
+            const card = document.getElementById('card');
+            const frontText = document.getElementById('front-text');
+            const backText = document.getElementById('back-text');
+            const progressFill = document.getElementById('progress-fill');
+            const progressText = document.getElementById('progress-text');
+            const progressPercent = document.getElementById('progress-percent');
+
+            let cards = [];
+            let currentIndex = 0;
+            let studyLogged = false;
+
+            async function logStudySession() {
+                if (studyLogged) return;
+                try {
+                    const response = await fetch(`/api/video/${videoId}/study`, {
+                        method: 'POST'
+                    });
+                    if (response.ok) {
+                        studyLogged = true;
+                        console.log('Study session logged successfully!');
+                    }
+                } catch (err) {
+                    console.error('Error logging study session:', err);
+                }
+            }
+
+            try {
+                const response = await fetch(`/api/video/${videoId}/flashcards`);
+                cards = await response.json();
+
+                if (!cards || cards.length === 0) {
+                    window.location.href = '/revision';
+                    return;
+                }
+
+                loader.classList.add('hidden');
+                studyDeck.classList.remove('hidden');
+                updateCard();
+            } catch (error) {
+                console.error('Error loading cards:', error);
+                loader.innerHTML = '<p class="error-message">Failed to load study deck.</p>';
+            }
+
+            function updateCard() {
+                const currentCard = cards[currentIndex];
+                frontText.textContent = currentCard.front;
+                backText.textContent = currentCard.back;
+                card.classList.remove('is-flipped');
+
+                const progress = ((currentIndex + 1) / cards.length) * 100;
+                progressFill.style.width = `${progress}%`;
+                progressText.textContent = `Card ${currentIndex + 1} of ${cards.length}`;
+                progressPercent.textContent = `${Math.round(progress)}% Complete`;
+
+                // Log study session when progress reaches 100%
+                if (currentIndex === cards.length - 1) {
+                    logStudySession();
+                }
+            }
+
+            function flipCard() {
+                card.classList.toggle('is-flipped');
+            }
+
+            function nextCard() {
+                if (currentIndex < cards.length - 1) {
+                    currentIndex++;
+                    updateCard();
+                }
+            }
+
+            function prevCard() {
+                if (currentIndex > 0) {
+                    currentIndex--;
+                    updateCard();
+                }
+            }
+
+            // Click handlers
+            document.getElementById('flip-btn').addEventListener('click', flipCard);
+            document.getElementById('next-btn').addEventListener('click', nextCard);
+            document.getElementById('prev-btn').addEventListener('click', prevCard);
+            card.addEventListener('click', flipCard);
+
+            // Keyboard navigation
+            document.addEventListener('keydown', (e) => {
+                if (e.code === 'Space') {
+                    e.preventDefault();
+                    flipCard();
+                } else if (e.code === 'ArrowRight') {
+                    nextCard();
+                } else if (e.code === 'ArrowLeft') {
+                    prevCard();
+                }
+            });
+
+            // Sidebar Toggle Logic
+            const sidebar = document.querySelector('.sidebar');
+            const mainContent = document.querySelector('.main-content');
+            const toggleBtn = document.getElementById('sidebar-toggle');
+            
+            const setSidebarState = (collapsed) => {
+                if (collapsed) {
+                    sidebar.classList.add('collapsed');
+                    mainContent.classList.add('sidebar-collapsed');
+                } else {
+                    sidebar.classList.remove('collapsed');
+                    mainContent.classList.remove('sidebar-collapsed');
+                }
+                localStorage.setItem('sidebar-collapsed', collapsed);
+            };
+
+            // Init state
+            const isCollapsed = localStorage.getItem('sidebar-collapsed') === 'true';
+            setSidebarState(isCollapsed);
+
+            toggleBtn.addEventListener('click', () => {
+                const newState = !sidebar.classList.contains('collapsed');
+                setSidebarState(newState);
+            });
+
+            // Sidebar Expandable Logic
+            document.querySelectorAll('.expandable-trigger').forEach(trigger => {
+                trigger.addEventListener('click', () => {
+                    if (sidebar.classList.contains('collapsed')) {
+                        setSidebarState(false);
+                        setTimeout(() => {
+                            trigger.parentElement.classList.add('open');
+                        }, 100);
+                    } else {
+                        trigger.parentElement.classList.toggle('open');
+                    }
+                });
+            });
+
+            // Global Sidebar Deck Loader
+            async function loadSidebarDecks() {
+                const list = document.getElementById('sidebar-decks-list');
+                if (!list) return;
+                try {
+                    const response = await fetch('/api/revision/stats');
+                    const videos = await response.json();
+                    if (videos && videos.length > 0) {
+                        const hubLink = list.querySelector('a[href="/revision"]');
+                        list.innerHTML = '';
+                        list.appendChild(hubLink);
+                        
+                        videos.slice(0, 5).forEach(v => {
+                            const a = document.createElement('a');
+                            a.href = `/revise?v=${v.video_id}`;
+                            a.className = 'sidebar-link sub-link';
+                            a.style.fontSize = '0.75rem';
+                            a.style.whiteSpace = 'nowrap';
+                            a.style.overflow = 'hidden';
+                            a.style.textOverflow = 'ellipsis';
+                            a.title = v.title;
+                            a.innerHTML = `<span class="sidebar-link-text">${v.title || 'Untitled'}</span>`;
+                            list.appendChild(a);
+                        });
+                    }
+                } catch (e) {
+                    console.error('Error loading sidebar decks:', e);
+                }
+            }
+            loadSidebarDecks();
+        });
+    </script>
+</body>
+</html>

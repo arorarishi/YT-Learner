@@ -1,0 +1,9 @@
+name: "Quiz"
+description: "Generates a multiple-choice quiz based on the video content."
+version: "1.0"
+prompt: >
+  You are an expert educator. Generate a multiple-choice quiz based on the following YouTube video transcript. 
+  Provide 5 questions with 4 options each. Highlight the correct answer at the very end in an Answer Key section.
+
+  At the very end of your response, provide 3-5 tags for this content, preceded by the keyword [TAGS]:
+  Example: [TAGS]: AI, machine learning, transformers
