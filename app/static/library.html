@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Library | AI Video Summarizer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/styles.css?v=2.1.3">
+    <style>
+        .library-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 1.5rem;
+            margin-bottom: 2.5rem;
+            gap: 1.5rem;
+            padding: 1.25rem 2rem;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 20px;
+            border: 1px solid var(--card-border);
+            backdrop-filter: blur(10px);
+        }
+
+        .search-box {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex: 1;
+            max-width: 600px;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 0.75rem 1.25rem;
+            border-radius: 12px;
+            border: 1px solid var(--card-border);
+            transition: all 0.3s ease;
+        }
+
+        .search-box:focus-within {
+            border-color: var(--accent-primary);
+            background: rgba(0, 0, 0, 0.3);
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.1);
+        }
+
+        .search-box input {
+            background: none;
+            border: none;
+            color: var(--text-primary);
+            width: 100%;
+            outline: none;
+            font-size: 1rem;
+        }
+
+        .view-controls {
+            display: flex;
+            gap: 0.5rem;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 0.4rem;
+            border-radius: 12px;
+            border: 1px solid var(--card-border);
+        }
+
+        .view-toggle-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            padding: 0.6rem;
+            cursor: pointer;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            transition: all 0.2s ease;
+        }
+
+        .view-toggle-btn:hover {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .view-toggle-btn.active {
+            background: var(--accent-primary);
+            color: white;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        /* Table Customizations */
+        .library-table-container {
+            width: 100%;
+            overflow-x: auto;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--card-border);
+            margin-bottom: 3rem;
+        }
+
+        .library-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 1000px;
+            /* Force minimum width for all columns */
+        }
+
+        .library-table th {
+            text-align: left;
+            padding: 1.25rem 1.5rem;
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            background: rgba(255, 255, 255, 0.02);
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        .library-table td {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--card-border);
+            vertical-align: middle;
+        }
+
+        .table-thumb {
+            width: 140px;
+            aspect-ratio: 16/9;
+            object-fit: cover;
+            border-radius: 10px;
+            border: 1px solid var(--card-border);
+        }
+
+        .table-title {
+            font-weight: 600;
+            font-size: 1rem;
+            margin-bottom: 0.25rem;
+            color: var(--text-primary);
+            max-width: 350px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .table-channel {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        .task-btn-group {
+            display: flex;
+            gap: 0.35rem;
+            width: 100%;
+        }
+
+        .task-btn {
+            position: relative;
+            flex: 1;
+            padding: 0.45rem 0.25rem;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-align: center;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--card-border);
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .task-btn:hover {
+            background: rgba(59, 130, 246, 0.1);
+            border-color: var(--accent-primary);
+            color: var(--text-primary);
+        }
+
+        /* Custom Premium Tooltips */
+        .task-btn[data-tooltip]::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 135%;
+            left: 50%;
+            transform: translateX(-50%) translateY(5px);
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #ffffff;
+            padding: 0.4rem 0.75rem;
+            font-size: 0.65rem;
+            font-weight: 500;
+            border-radius: 6px;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
+            z-index: 9999;
+        }
+
+        .task-btn[data-tooltip]::before {
+            content: '';
+            position: absolute;
+            bottom: 120%;
+            left: 50%;
+            transform: translateX(-50%) translateY(5px);
+            border-width: 5px;
+            border-style: solid;
+            border-color: rgba(15, 23, 42, 0.95) transparent transparent transparent;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 9999;
+        }
+
+        .task-btn[data-tooltip]:hover::after,
+        .task-btn[data-tooltip]:hover::before {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* Rating Stars Style with Row-Reverse CSS Hover Magic */
+        .rating-stars {
+            display: flex;
+            flex-direction: row-reverse;
+            justify-content: flex-end;
+            gap: 0.35rem;
+            margin-top: 0.35rem;
+            margin-bottom: 0.75rem;
+            align-items: center;
+        }
+
+        .rating-stars .star {
+            font-size: 1.25rem;
+            color: rgba(255, 255, 255, 0.15);
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            user-select: none;
+        }
+
+        /* Star hover highlights current and preceding stars on screen */
+        .rating-stars .star:hover,
+        .rating-stars .star:hover ~ .star {
+            color: #fbbf24;
+            transform: scale(1.25);
+            text-shadow: 0 0 10px rgba(251, 191, 36, 0.7);
+        }
+
+        /* Star active highlights persisted ratings */
+        .rating-stars .star.active {
+            color: #fbbf24;
+            text-shadow: 0 0 8px rgba(251, 191, 36, 0.5);
+        }
+
+        /* Grid View Fixes */
+        .video-card-actions {
+            margin-bottom: 0.75rem;
+        }
+
+        .video-card-title {
+            font-size: 1.05rem;
+            line-height: 1.4;
+            height: 2.8rem;
+            /* 2 lines */
+            overflow: hidden;
+            margin-bottom: 0.75rem;
+        }
+
+        /* Heatmap Styles */
+        .heatmap-section {
+            margin-bottom: 2rem;
+            background: rgba(255, 255, 255, 0.03);
+            padding: 1.5rem;
+            border-radius: 20px;
+            border: 1px solid var(--card-border);
+            overflow-x: auto;
+        }
+
+        .heatmap-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .heatmap-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .heatmap-grid {
+            display: grid;
+            grid-auto-flow: column;
+            grid-template-columns: repeat(53, 11px);
+            grid-template-rows: repeat(7, 11px);
+            gap: 3px;
+            min-width: 720px;
+        }
+
+        .activity-stats-table {
+            width: 100%;
+            margin-top: 1.5rem;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            border: 1px solid var(--card-border);
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+
+        .activity-stats-table th,
+        .activity-stats-table td {
+            padding: 0.75rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        .activity-stats-table th {
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+        .activity-toggle-btn {
+            background: none;
+            border: 1px solid var(--card-border);
+            color: var(--text-secondary);
+            padding: 0.4rem 0.8rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .activity-toggle-btn:hover {
+            border-color: var(--accent-primary);
+            color: var(--text-primary);
+        }
+
+        .heatmap-day {
+            width: 10px;
+            height: 10px;
+            border-radius: 2px;
+            background: #161b22;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .heatmap-day:hover {
+            outline: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .heatmap-day.level-0 {
+            background: #161b22;
+        }
+
+        .heatmap-day.level-1 {
+            background: #0e4429;
+        }
+
+        .heatmap-day.level-2 {
+            background: #006d32;
+        }
+
+        .heatmap-day.level-3 {
+            background: #26a641;
+        }
+
+        .heatmap-day.level-4 {
+            background: #39d353;
+        }
+
+        .heatmap-day.selected {
+            outline: 2px solid var(--accent-primary);
+            outline-offset: 1px;
+        }
+
+        .heatmap-legend {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-top: 1rem;
+        }
+
+        .legend-box.level-0 {
+            background: #161b22;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .legend-box.level-1 {
+            background: #0e4429;
+        }
+
+        .legend-box.level-2 {
+            background: #006d32;
+        }
+
+        .legend-box.level-3 {
+            background: #26a641;
+        }
+
+        .legend-box.level-4 {
+            background: #39d353;
+        }
+
+        .heatmap-tooltip {
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #000;
+            color: #fff;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            white-space: nowrap;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+            z-index: 100;
+            margin-bottom: 5px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--card-border);
+        }
+
+        .heatmap-day:hover .heatmap-tooltip {
+            opacity: 1;
+        }
+
+        /* Premium In-App Toast Popup Styles */
+        .toast {
+            background: rgba(17, 24, 39, 0.85);
+            backdrop-filter: blur(16px) saturate(180%);
+            -webkit-backdrop-filter: blur(16px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: var(--text-primary);
+            padding: 0.85rem 1.25rem;
+            border-radius: 12px;
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            min-width: 320px;
+            transform: translateX(120%);
+            opacity: 0;
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        .toast-success {
+            border-left: 4px solid #10B981;
+        }
+
+        .toast-error {
+            border-left: 4px solid #EF4444;
+        }
+
+        .toast-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+        }
+
+        .toast-success .toast-icon {
+            background: rgba(16, 185, 129, 0.1);
+            color: #10B981;
+        }
+
+        .toast-error .toast-icon {
+            background: rgba(239, 68, 68, 0.1);
+            color: #EF4444;
+        }
+
+        .toast-message {
+            font-size: 0.85rem;
+            font-weight: 600;
+            flex: 1;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="background-orbs">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+
+    <div class="app-layout">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1 class="sidebar-logo gradient-text">Summarizer</h1>
+                <button class="sidebar-toggle" id="sidebar-toggle">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="3" x2="21" y1="6" y2="6" />
+                        <line x1="3" x2="21" y1="12" y2="12" />
+                        <line x1="3" x2="21" y1="18" y2="18" />
+                    </svg>
+                </button>
+            </div>
+            <nav class="sidebar-nav">
+                <div class="nav-group">
+                    <h3 class="nav-label">Main</h3>
+                    <a href="/" class="sidebar-link">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                            <polyline points="9 22 9 12 15 12 15 22" />
+                        </svg>
+                        <span class="sidebar-link-text">New Summary</span>
+                    </a>
+                    <a href="/library" class="sidebar-link active">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <rect width="7" height="7" x="3" y="3" rx="1" />
+                            <rect width="7" height="7" x="14" y="3" rx="1" />
+                            <rect width="7" height="7" x="14" y="14" rx="1" />
+                            <rect width="7" height="7" x="3" y="14" rx="1" />
+                        </svg>
+                        <span class="sidebar-link-text">Library</span>
+                    </a>
+                    <a href="/playlists" class="sidebar-link">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M21 15V6M18.5 18a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM12 12H3M16 6H3M12 18H3" />
+                        </svg>
+                        <span class="sidebar-link-text">Playlists</span>
+                    </a>
+                </div>
+                <div class="nav-group expandable-group" id="decks-group">
+                    <button class="sidebar-link expandable-trigger">
+                        <div style="display: flex; align-items: center; gap: 0.75rem;">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+                            </svg>
+                            <span class="sidebar-link-text">Study Decks</span>
+                        </div>
+                        <svg class="chevron-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2">
+                            <path d="m9 18 6-6-6-6" />
+                        </svg>
+                    </button>
+                    <div class="expandable-content" id="sidebar-decks-list">
+                        <a href="/revision" class="sidebar-link sub-link">
+                            <span class="sidebar-link-text">Revision Hub</span>
+                        </a>
+                    </div>
+                </div>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="container" style="max-width: 1200px;">
+                <header style="margin-bottom: 2rem;">
+                    <h1 class="gradient-text" style="font-size: 2.5rem;">Video Library</h1>
+                    <p class="subtitle" style="justify-content: flex-start;">Your history of transformed insights</p>
+                </header>
+
+                <!-- Heatmap Section -->
+                <section class="heatmap-section">
+                    <div class="heatmap-header">
+                        <div class="heatmap-title" id="heatmap-range-text">Last year's activity</div>
+                        <div style="display: flex; gap: 1rem; align-items: center;">
+                            <button class="activity-toggle-btn" id="toggle-activity-details">Show Activity
+                                Details</button>
+                            <div class="heatmap-legend">
+                                <span>Less</span>
+                                <div class="legend-box level-0"></div>
+                                <div class="legend-box level-1"></div>
+                                <div class="legend-box level-2"></div>
+                                <div class="legend-box level-3"></div>
+                                <div class="legend-box level-4"></div>
+                                <span>More</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="heatmap-grid" id="heatmap-grid">
+                        <!-- Heatmap generated by JS -->
+                    </div>
+                    <div id="activity-details-container" class="hidden">
+                        <table class="activity-stats-table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Videos Summarized</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="activity-stats-body">
+                                <!-- Stats generated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section class="library-header">
+                    <div class="search-box">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <path d="m21 21-4.3-4.3"></path>
+                        </svg>
+                        <input type="text" id="library-search" placeholder="Search by title, channel or tags...">
+                    </div>
+                    <div class="view-controls">
+                        <button id="grid-view-btn" class="view-toggle-btn active" title="Grid View">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <rect width="7" height="7" x="3" y="3" rx="1" />
+                                <rect width="7" height="7" x="14" y="3" rx="1" />
+                                <rect width="7" height="7" x="14" y="14" rx="1" />
+                                <rect width="7" height="7" x="3" y="14" rx="1" />
+                            </svg>
+                        </button>
+                        <button id="list-view-btn" class="view-toggle-btn" title="List View">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <line x1="3" x2="21" y1="6" y2="6" />
+                                <line x1="3" x2="21" y1="12" y2="12" />
+                                <line x1="3" x2="21" y1="18" y2="18" />
+                            </svg>
+                        </button>
+                    </div>
+                </section>
+
+                <div id="library-content">
+                    <div id="library-grid" class="library-grid">
+                        <!-- Grid items -->
+                    </div>
+                    <div id="library-list" class="library-table-container hidden">
+                        <table class="library-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 160px;">Preview</th>
+                                    <th>Video Details</th>
+                                    <th style="width: 180px;">Channel</th>
+                                    <th style="width: 250px;">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="library-table-body">
+                                <!-- Table rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <footer
+                    style="text-align: center; margin-top: 4rem; padding-bottom: 2rem; color: var(--text-secondary);">
+                    <p>© 2026 AI Video Summarizer | Build with DeepSeek & FastAPI</p>
+                </footer>
+            </div>
+        </main>
+    </div>
+
+    <div id="playlist-modal" class="hidden"
+        style="position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1000; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(5px);">
+        <div
+            style="background: var(--bg-primary); border: 1px solid var(--card-border); padding: 2rem; border-radius: 16px; width: 400px; max-width: 90vw;">
+            <h3 style="margin-bottom: 1rem; color: var(--text-primary);">Add to Playlist</h3>
+            <select id="playlist-select"
+                style="width: 100%; padding: 0.75rem; border-radius: 8px; background: rgba(0,0,0,0.2); border: 1px solid var(--card-border); color: var(--text-primary); margin-bottom: 1.5rem; outline: none;">
+                <option value="">Loading playlists...</option>
+            </select>
+            <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                <button onclick="closeAddToPlaylistModal()" class="secondary-btn"
+                    style="cursor: pointer;">Cancel</button>
+                <button onclick="confirmAddToPlaylist()" class="primary-btn" style="cursor: pointer;">Add</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const libraryGrid = document.getElementById('library-grid');
+            const libraryList = document.getElementById('library-list');
+            const libraryTableBody = document.getElementById('library-table-body');
+            const librarySearch = document.getElementById('library-search');
+            const gridViewBtn = document.getElementById('grid-view-btn');
+            const listViewBtn = document.getElementById('list-view-btn');
+
+            let allVideos = [];
+            let activityData = [];
+            let currentView = 'grid';
+            let selectedDate = null; // format YYYY-MM-DD
+
+            const loadLibrary = async () => {
+                try {
+                    const [videoRes, activityRes] = await Promise.all([
+                        fetch('/api/videos'),
+                        fetch('/api/activity')
+                    ]);
+                    allVideos = await videoRes.json();
+                    activityData = await activityRes.json();
+                    renderHeatmap();
+                    renderLibrary();
+                } catch (error) {
+                    console.error('Failed to load library:', error);
+                }
+            };
+
+            const renderHeatmap = () => {
+                const heatmapGrid = document.getElementById('heatmap-grid');
+                const activityBody = document.getElementById('activity-stats-body');
+                if (!heatmapGrid) return;
+
+                heatmapGrid.innerHTML = '';
+                const today = new Date();
+
+                const startDate = new Date();
+                startDate.setDate(today.getDate() - 364);
+                while (startDate.getDay() !== 0) {
+                    startDate.setDate(startDate.getDate() - 1);
+                }
+
+                const counts = {};
+                activityData.forEach(a => {
+                    counts[a.activity_date] = a.video_count;
+                });
+
+                // Render Table Stats as well
+                activityBody.innerHTML = activityData.sort((a, b) => b.activity_date.localeCompare(a.activity_date)).map(a => `
+                    <tr>
+                        <td>${a.activity_date}</td>
+                        <td>${a.video_count}</td>
+                        <td><span class="tag-chip" style="background: #0e4429; color: #39d353; font-size: 0.65rem;">Completed</span></td>
+                    </tr>
+                `).join('');
+
+                // Helper to get color level
+                const getLevel = (count) => {
+                    if (!count) return 0;
+                    if (count === 1) return 1;
+                    if (count <= 3) return 2;
+                    if (count <= 6) return 3;
+                    return 4;
+                };
+
+                const totalDays = 53 * 7;
+                for (let i = 0; i < totalDays; i++) {
+                    const d = new Date(startDate);
+                    d.setDate(startDate.getDate() + i);
+                    const dateStr = d.toISOString().split('T')[0];
+                    const count = counts[dateStr] || 0;
+                    const level = getLevel(count);
+
+                    const dayEl = document.createElement('div');
+                    dayEl.className = `heatmap-day level-${level} ${selectedDate === dateStr ? 'selected' : ''}`;
+                    dayEl.dataset.date = dateStr;
+
+                    const formattedDate = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                    dayEl.innerHTML = `<div class="heatmap-tooltip">${count} videos on ${formattedDate}</div>`;
+
+                    dayEl.addEventListener('click', () => {
+                        if (selectedDate === dateStr) {
+                            selectedDate = null;
+                        } else {
+                            selectedDate = dateStr;
+                        }
+                        renderHeatmap();
+                        renderLibrary();
+                    });
+
+                    heatmapGrid.appendChild(dayEl);
+                }
+            };
+
+            const renderLibrary = () => {
+                const query = librarySearch.value.toLowerCase();
+                let filtered = allVideos.filter(v =>
+                    (v.title || '').toLowerCase().includes(query) ||
+                    (v.channel_name || '').toLowerCase().includes(query) ||
+                    (v.tags_text || '').toLowerCase().includes(query)
+                );
+
+                if (selectedDate) {
+                    filtered = filtered.filter(v => v.load_timestamp && v.load_timestamp.startsWith(selectedDate));
+                }
+
+                if (currentView === 'grid') {
+                    libraryGrid.classList.remove('hidden');
+                    libraryList.classList.add('hidden');
+                    renderGrid(filtered);
+                } else {
+                    libraryGrid.classList.add('hidden');
+                    libraryList.classList.remove('hidden');
+                    renderList(filtered);
+                }
+            };
+             const renderGrid = (videos) => {
+                libraryGrid.innerHTML = videos.map(video => `
+                    <div class="glass-card video-card">
+                        <a href="/details?v=${video.video_id}"><img src="/api/thumbnail/${video.video_id}" class="video-card-thumb" onerror="this.src='${video.thumbnail_url}'"></a>
+                        <div class="video-card-content">
+                            <h3 class="video-card-title" title="${video.title}"><a href="/details?v=${video.video_id}" style="color: inherit; text-decoration: none;">${video.title || 'Untitled'}</a></h3>
+                            <p class="video-card-channel">${video.channel_name || 'Unknown Channel'}</p>
+                            <div class="rating-stars">
+                                <span class="star ${video.rating >= 3 ? 'active' : ''}" onclick="event.stopPropagation(); setRating('${video.video_id}', 3)">★</span>
+                                <span class="star ${video.rating >= 2 ? 'active' : ''}" onclick="event.stopPropagation(); setRating('${video.video_id}', 2)">★</span>
+                                <span class="star ${video.rating >= 1 ? 'active' : ''}" onclick="event.stopPropagation(); setRating('${video.video_id}', 1)">★</span>
+                            </div>
+                            <div class="video-card-actions">
+                                <a href="/details?v=${video.video_id}" class="secondary-btn" style="width: 100%; text-decoration: none; text-align: center; display: block;">View Details</a>
+                            </div>
+                            <div class="task-btn-group">
+                                <a href="/details?v=${video.video_id}&t=summary" class="task-btn" data-tooltip="Summary">S</a>
+                                <a href="/details?v=${video.video_id}&t=quiz" class="task-btn" data-tooltip="Interactive Quiz">Q</a>
+                                <a href="/details?v=${video.video_id}&t=study_notes" class="task-btn" data-tooltip="Study Notes">N</a>
+                                <a href="/details?v=${video.video_id}&t=detailed_notes" class="task-btn" data-tooltip="Detailed Summary">D</a>
+                                <a href="/details?v=${video.video_id}&t=flash_cards" class="task-btn" data-tooltip="Flash Cards">C</a>
+                                <button onclick="openAddToPlaylistModal('${video.video_id}')" class="task-btn" style="cursor:pointer;" data-tooltip="Add to Playlist">+</button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            };
+
+            const renderList = (videos) => {
+                libraryTableBody.innerHTML = videos.map(video => `
+                    <tr>
+                        <td><a href="/details?v=${video.video_id}"><img src="/api/thumbnail/${video.video_id}" class="table-thumb" onerror="this.src='${video.thumbnail_url}'"></a></td>
+                        <td>
+                            <div class="table-title" title="${video.title}"><a href="/details?v=${video.video_id}" style="color: inherit; text-decoration: none;">${video.title || 'Untitled'}</a></div>
+                            <div class="table-tags" style="display: flex; gap: 0.4rem; margin-top: 0.5rem;">
+                                ${(video.tags_text || '').split(',').slice(0, 2).map(tag => `<span class="tag-chip" style="font-size: 0.65rem; padding: 0.1rem 0.4rem;">${tag.trim()}</span>`).join('')}
+                            </div>
+                            <div class="rating-stars" style="margin-top: 0.5rem; margin-bottom: 0;">
+                                <span class="star ${video.rating >= 3 ? 'active' : ''}" onclick="event.stopPropagation(); setRating('${video.video_id}', 3)">★</span>
+                                <span class="star ${video.rating >= 2 ? 'active' : ''}" onclick="event.stopPropagation(); setRating('${video.video_id}', 2)">★</span>
+                                <span class="star ${video.rating >= 1 ? 'active' : ''}" onclick="event.stopPropagation(); setRating('${video.video_id}', 1)">★</span>
+                            </div>
+                        </td>
+                        <td><div class="table-channel">${video.channel_name || '-'}</div></td>
+                        <td>
+                            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                                <a href="/details?v=${video.video_id}" class="secondary-btn" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; text-decoration: none; text-align: center; display: block;">Details</a>
+                                <div class="task-btn-group">
+                                    <a href="/details?v=${video.video_id}&t=summary" class="task-btn" data-tooltip="Summary">S</a>
+                                    <a href="/details?v=${video.video_id}&t=quiz" class="task-btn" data-tooltip="Interactive Quiz">Q</a>
+                                    <a href="/details?v=${video.video_id}&t=study_notes" class="task-btn" data-tooltip="Study Notes">N</a>
+                                    <a href="/details?v=${video.video_id}&t=detailed_notes" class="task-btn" data-tooltip="Detailed Summary">D</a>
+                                    <a href="/details?v=${video.video_id}&t=flash_cards" class="task-btn" data-tooltip="Flash Cards">C</a>
+                                    <button onclick="openAddToPlaylistModal('${video.video_id}')" class="task-btn" style="cursor:pointer;" data-tooltip="Add to Playlist">+</button>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                `).join('');;
+            };
+
+            gridViewBtn.addEventListener('click', () => {
+                currentView = 'grid';
+                gridViewBtn.classList.add('active');
+                listViewBtn.classList.remove('active');
+                renderLibrary();
+            });
+
+            document.getElementById('toggle-activity-details').addEventListener('click', (e) => {
+                const container = document.getElementById('activity-details-container');
+                const isHidden = container.classList.toggle('hidden');
+                e.target.textContent = isHidden ? 'Show Activity Details' : 'Hide Activity Details';
+            });
+
+            listViewBtn.addEventListener('click', () => {
+                currentView = 'list';
+                listViewBtn.classList.add('active');
+                gridViewBtn.classList.add('active'); // CSS bug fix: use class, not ID
+                gridViewBtn.classList.remove('active');
+                listViewBtn.classList.add('active');
+                renderLibrary();
+            });
+
+            librarySearch.addEventListener('input', renderLibrary);
+            loadLibrary();
+
+            // Sidebar Toggle Logic
+            const sidebar = document.querySelector('.sidebar');
+            const mainContent = document.querySelector('.main-content');
+            const toggleBtn = document.getElementById('sidebar-toggle');
+
+            const setSidebarState = (collapsed) => {
+                if (collapsed) {
+                    sidebar.classList.add('collapsed');
+                    mainContent.classList.add('sidebar-collapsed');
+                } else {
+                    sidebar.classList.remove('collapsed');
+                    mainContent.classList.remove('sidebar-collapsed');
+                }
+                localStorage.setItem('sidebar-collapsed', collapsed);
+            };
+
+            // Init state
+            const isCollapsed = localStorage.getItem('sidebar-collapsed') === 'true';
+            setSidebarState(isCollapsed);
+
+            toggleBtn.addEventListener('click', () => {
+                const newState = !sidebar.classList.contains('collapsed');
+                setSidebarState(newState);
+            });
+
+            // Sidebar Expandable Logic
+            document.querySelectorAll('.expandable-trigger').forEach(trigger => {
+                trigger.addEventListener('click', () => {
+                    if (sidebar.classList.contains('collapsed')) {
+                        setSidebarState(false);
+                        // Small delay to let expansion animation start before toggling open
+                        setTimeout(() => {
+                            trigger.parentElement.classList.add('open');
+                        }, 100);
+                    } else {
+                        trigger.parentElement.classList.toggle('open');
+                    }
+                });
+            });
+
+            // Sidebar Decks
+            async function loadSidebarDecks() {
+                const list = document.getElementById('sidebar-decks-list');
+                if (!list) return;
+                try {
+                    const response = await fetch('/api/revision/stats');
+                    const videos = await response.json();
+                    if (videos && videos.length > 0) {
+                        const hubLink = list.querySelector('a[href="/revision"]');
+                        list.innerHTML = '';
+                        list.appendChild(hubLink);
+                        videos.slice(0, 5).forEach(v => {
+                            const a = document.createElement('a');
+                            a.href = `/revise?v=${v.video_id}`;
+                            a.className = 'sidebar-link sub-link';
+                            a.style.fontSize = '0.75rem';
+                            a.style.whiteSpace = 'nowrap';
+                            a.style.overflow = 'hidden';
+                            a.style.textOverflow = 'ellipsis';
+                            a.title = v.title;
+                            a.innerHTML = `<span class="sidebar-link-text">${v.title || 'Untitled'}</span>`;
+                            list.appendChild(a);
+                        });
+                    }
+                } catch (e) { console.error(e); }
+            }
+            loadSidebarDecks();
+            window.setRating = async (videoId, rating) => {
+                const video = allVideos.find(v => v.video_id === videoId);
+                let newRating = rating;
+                if (video && video.rating === rating) {
+                    newRating = 0;
+                }
+                try {
+                    const response = await fetch(`/api/video/${videoId}/rating`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ rating: newRating })
+                    });
+                    if (response.ok) {
+                        if (video) {
+                            video.rating = newRating;
+                        }
+                        renderLibrary();
+                    }
+                } catch (err) {
+                    console.error('Error updating rating:', err);
+                }
+            };
+
+            // Playlist Modal Logic
+            let currentVideoIdForPlaylist = null;
+            window.openAddToPlaylistModal = async (videoId) => {
+                currentVideoIdForPlaylist = videoId;
+                const modal = document.getElementById('playlist-modal');
+                const select = document.getElementById('playlist-select');
+                modal.classList.remove('hidden');
+
+                try {
+                    const res = await fetch('/api/playlists');
+                    const playlists = await res.json();
+                    if (playlists.length === 0) {
+                        select.innerHTML = '<option value="">No playlists found. Create one first.</option>';
+                    } else {
+                        select.innerHTML = playlists.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+                    }
+                } catch (e) {
+                    select.innerHTML = '<option value="">Error loading playlists</option>';
+                }
+            };
+
+            window.closeAddToPlaylistModal = () => {
+                document.getElementById('playlist-modal').classList.add('hidden');
+                currentVideoIdForPlaylist = null;
+            };
+
+            window.showToast = (message, type = 'success') => {
+                const container = document.getElementById('toast-container');
+                if (!container) return;
+
+                const toast = document.createElement('div');
+                toast.className = `toast toast-${type}`;
+                
+                const iconSVG = type === 'success' 
+                    ? `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>`
+                    : `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`;
+
+                toast.innerHTML = `
+                    <div class="toast-icon">${iconSVG}</div>
+                    <div class="toast-message">${message}</div>
+                `;
+
+                container.appendChild(toast);
+
+                // Force reflow
+                toast.offsetHeight;
+
+                // Show toast
+                toast.classList.add('show');
+
+                // Auto remove
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                    setTimeout(() => {
+                        toast.remove();
+                    }, 300);
+                }, 3500);
+            };
+
+            window.confirmAddToPlaylist = async () => {
+                const select = document.getElementById('playlist-select');
+                const playlistId = select.value;
+                if (!playlistId || !currentVideoIdForPlaylist) return;
+
+                try {
+                    await fetch(`/api/playlists/${playlistId}/videos`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ video_id: currentVideoIdForPlaylist })
+                    });
+                    closeAddToPlaylistModal();
+                    showToast('Added to playlist successfully!', 'success');
+                } catch (e) {
+                    showToast('Error adding to playlist', 'error');
+                    console.error(e);
+                }
+            };
+
+        });
+    </script>
+    <div id="toast-container" style="position: fixed; bottom: 2rem; right: 2rem; z-index: 9999; display: flex; flex-direction: column; gap: 0.75rem;"></div>
+</body>
+
+</html>

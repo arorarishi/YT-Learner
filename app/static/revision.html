@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Revision Hub | AI Video Summarizer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/styles.css?v=2.1.2">
+    <style>
+        .revision-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .revision-card {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .revision-card:hover {
+            transform: translateY(-8px);
+            border-color: var(--accent-primary);
+            box-shadow: 0 12px 40px rgba(59, 130, 246, 0.2);
+        }
+
+        .card-count-badge {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: var(--accent-primary);
+            color: white;
+            padding: 0.4rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            z-index: 2;
+        }
+
+        .revision-info {
+            padding: 1.5rem;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .revision-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            line-height: 1.4;
+        }
+
+        .revision-meta {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .start-btn {
+            margin-top: auto;
+            width: 100%;
+            text-decoration: none;
+            padding: 0.8rem;
+            background: var(--accent-gradient);
+            border-radius: 12px;
+            color: white;
+            font-weight: 600;
+            text-align: center;
+            transition: opacity 0.2s;
+        }
+
+        .start-btn:hover {
+            opacity: 0.9;
+        }
+
+        .empty-hub {
+            text-align: center;
+            padding: 5rem 2rem;
+            background: var(--card-bg);
+            border-radius: 24px;
+            border: 1px dashed var(--card-border);
+            margin-top: 2rem;
+        }
+
+        /* Page Folding & Heatmap Styles */
+        .foldable-section {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            margin-bottom: 2rem;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .fold-header {
+            width: 100%;
+            background: none;
+            border: none;
+            padding: 1.25rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            color: var(--text-primary);
+            outline: none;
+            transition: background 0.2s;
+        }
+
+        .fold-header:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .fold-content {
+            max-height: 0;
+            opacity: 0;
+            transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease, padding 0.3s ease;
+            padding: 0 1.5rem;
+            overflow: hidden;
+        }
+
+        .foldable-section.open {
+            border-color: rgba(59, 130, 246, 0.3);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .foldable-section.open .fold-content {
+            max-height: 800px;
+            opacity: 1;
+            padding: 0 1.5rem 1.5rem 1.5rem;
+            overflow-x: auto;
+        }
+
+        .fold-header .chevron-icon {
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            color: var(--text-secondary);
+        }
+
+        .foldable-section.open .fold-header .chevron-icon {
+            transform: rotate(180deg);
+            color: var(--accent-primary);
+        }
+
+        .heatmap-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .heatmap-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .heatmap-grid {
+            display: grid;
+            grid-auto-flow: column;
+            grid-template-columns: repeat(53, 11px);
+            grid-template-rows: repeat(7, 11px);
+            gap: 3px;
+            min-width: 720px;
+            margin-top: 0.5rem;
+            padding-bottom: 0.5rem;
+        }
+
+        .heatmap-day {
+            width: 10px;
+            height: 10px;
+            border-radius: 2px;
+            background: #161b22;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .heatmap-day:hover {
+            outline: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .heatmap-day.level-0 {
+            background: #161b22;
+        }
+
+        .heatmap-day.level-1 {
+            background: #0e4429;
+        }
+
+        .heatmap-day.level-2 {
+            background: #006d32;
+        }
+
+        .heatmap-day.level-3 {
+            background: #26a641;
+        }
+
+        .heatmap-day.level-4 {
+            background: #39d353;
+        }
+
+        .heatmap-day.selected {
+            outline: 2px solid var(--accent-primary);
+            outline-offset: 1px;
+        }
+
+        .heatmap-legend {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .legend-box {
+            width: 10px;
+            height: 10px;
+            border-radius: 2px;
+        }
+
+        .legend-box.level-0 {
+            background: #161b22;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .legend-box.level-1 {
+            background: #0e4429;
+        }
+
+        .legend-box.level-2 {
+            background: #006d32;
+        }
+
+        .legend-box.level-3 {
+            background: #26a641;
+        }
+
+        .legend-box.level-4 {
+            background: #39d353;
+        }
+
+        .heatmap-tooltip {
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #000;
+            color: #fff;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            white-space: nowrap;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+            z-index: 100;
+            margin-bottom: 5px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--card-border);
+        }
+
+        .heatmap-day:hover .heatmap-tooltip {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="background-orbs">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+
+    <div class="app-layout">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1 class="sidebar-logo gradient-text">Summarizer</h1>
+                <button class="sidebar-toggle" id="sidebar-toggle">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" x2="21" y1="6" y2="6"/><line x1="3" x2="21" y1="12" y2="12"/><line x1="3" x2="21" y1="18" y2="18"/></svg>
+                </button>
+            </div>
+            <nav class="sidebar-nav">
+                <div class="nav-group">
+                    <h3 class="nav-label">Main</h3>
+                    <a href="/" class="sidebar-link">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                        <span class="sidebar-link-text">New Summary</span>
+                    </a>
+                    <a href="/library" class="sidebar-link">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
+                        <span class="sidebar-link-text">Library</span>
+                    </a>
+                    <a href="/playlists" class="sidebar-link">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15V6M18.5 18a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM12 12H3M16 6H3M12 18H3"/></svg>
+                        <span class="sidebar-link-text">Playlists</span>
+                    </a>
+                </div>
+                <div class="nav-group expandable-group" id="decks-group">
+                    <button class="sidebar-link expandable-trigger">
+                        <div style="display: flex; align-items: center; gap: 0.75rem;">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                            <span class="sidebar-link-text">Study Decks</span>
+                        </div>
+                        <svg class="chevron-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+                    </button>
+                    <div class="expandable-content" id="sidebar-decks-list">
+                        <a href="/revision" class="sidebar-link sub-link active">
+                            <span class="sidebar-link-text">Revision Hub</span>
+                        </a>
+                        <!-- Dynamic decks will be added here -->
+                    </div>
+                </div>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="container" style="max-width: 1200px;">
+                <header style="margin-bottom: 3rem;">
+                    <div class="logo-section">
+                        <h1 class="gradient-text">Revision Hub</h1>
+                        <p class="subtitle">Master your knowledge with active recall</p>
+                    </div>
+                </header>
+
+                <section id="revision-content">
+                    <div id="loader" class="loader-container" style="text-align: center; padding: 3rem;">
+                        <div class="loader" style="margin: 0 auto;"></div>
+                        <p style="margin-top: 1rem; color: var(--text-secondary);">Loading your cards...</p>
+                    </div>
+
+                    <!-- Foldable Heatmap Section -->
+                    <div class="foldable-section open hidden" id="study-activity-section">
+                        <button class="fold-header" id="toggle-study-activity">
+                            <span style="font-weight: 600; display: flex; align-items: center; gap: 0.5rem; font-size: 1.05rem; color: var(--text-primary);">
+                                📊 Active Recall Study Grid
+                            </span>
+                            <svg class="chevron-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                        </button>
+                        <div class="fold-content">
+                            <div class="heatmap-header" style="margin-top: 0.5rem;">
+                                <div class="heatmap-title" id="heatmap-range-text">Last year's study activity</div>
+                                <div class="heatmap-legend">
+                                    <span>Less</span>
+                                    <div class="legend-box level-0"></div>
+                                    <div class="legend-box level-1"></div>
+                                    <div class="legend-box level-2"></div>
+                                    <div class="legend-box level-3"></div>
+                                    <div class="legend-box level-4"></div>
+                                    <span>More</span>
+                                </div>
+                            </div>
+                            <div class="heatmap-grid" id="heatmap-grid">
+                                <!-- Heatmap generated by JS -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="revision-grid" class="revision-grid hidden">
+                        <!-- Cards will be injected here -->
+                    </div>
+
+                    <div id="empty-state" class="empty-hub hidden">
+                        <h2 style="margin-bottom: 1rem;">No Flashcards Found</h2>
+                        <p style="color: var(--text-secondary); margin-bottom: 2rem;">Generate flashcards for your videos to start revising them here.</p>
+                        <a href="/library" class="primary-btn" style="text-decoration: none; display: inline-block;">Go to Library</a>
+                    </div>
+                </section>
+
+                <footer style="text-align: center; margin-top: 4rem; padding-bottom: 2rem; color: var(--text-secondary);">
+                    <p>© 2026 AI Video Summarizer | Powered by DeepSeek V3</p>
+                </footer>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const grid = document.getElementById('revision-grid');
+            const loader = document.getElementById('loader');
+            const emptyState = document.getElementById('empty-state');
+            const foldSection = document.getElementById('study-activity-section');
+            const foldHeader = document.getElementById('toggle-study-activity');
+
+            let allVideos = [];
+            let studyActivity = [];
+            let selectedDate = null;
+            let selectedVideoIds = [];
+
+            // Folding accordion toggle
+            foldHeader.addEventListener('click', () => {
+                foldSection.classList.toggle('open');
+            });
+
+            const renderStudyHeatmap = () => {
+                const heatmapGrid = document.getElementById('heatmap-grid');
+                if (!heatmapGrid) return;
+
+                heatmapGrid.innerHTML = '';
+                const today = new Date();
+
+                const startDate = new Date();
+                startDate.setDate(today.getDate() - 364);
+                while (startDate.getDay() !== 0) {
+                    startDate.setDate(startDate.getDate() - 1);
+                }
+
+                const counts = {};
+                const videoIdMap = {};
+                studyActivity.forEach(a => {
+                    counts[a.activity_date] = a.video_count;
+                    videoIdMap[a.activity_date] = a.video_ids ? a.video_ids.split(',') : [];
+                });
+
+                const getLevel = (count) => {
+                    if (!count) return 0;
+                    if (count === 1) return 1;
+                    if (count <= 3) return 2;
+                    if (count <= 6) return 3;
+                    return 4;
+                };
+
+                const totalDays = 53 * 7;
+                for (let i = 0; i < totalDays; i++) {
+                    const d = new Date(startDate);
+                    d.setDate(startDate.getDate() + i);
+                    const dateStr = d.toISOString().split('T')[0];
+                    const count = counts[dateStr] || 0;
+                    const level = getLevel(count);
+
+                    const dayEl = document.createElement('div');
+                    dayEl.className = `heatmap-day level-${level} ${selectedDate === dateStr ? 'selected' : ''}`;
+                    dayEl.dataset.date = dateStr;
+
+                    const formattedDate = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                    dayEl.innerHTML = `<div class="heatmap-tooltip">${count} decks revised on ${formattedDate}</div>`;
+
+                    dayEl.addEventListener('click', () => {
+                        if (selectedDate === dateStr) {
+                            selectedDate = null;
+                            selectedVideoIds = [];
+                        } else {
+                            selectedDate = dateStr;
+                            selectedVideoIds = videoIdMap[dateStr] || [];
+                        }
+                        renderStudyHeatmap();
+                        renderRevisionGrid();
+                    });
+
+                    heatmapGrid.appendChild(dayEl);
+                }
+            };
+
+            const renderRevisionGrid = () => {
+                let filtered = allVideos;
+                if (selectedDate) {
+                    filtered = allVideos.filter(v => selectedVideoIds.includes(v.video_id));
+                }
+
+                if (filtered.length > 0) {
+                    grid.classList.remove('hidden');
+                    grid.innerHTML = filtered.map(v => `
+                        <div class="glass-card revision-card">
+                            <span class="card-count-badge">${v.card_count} Cards</span>
+                            <img src="/api/thumbnail/${v.video_id}" class="video-card-thumb" onerror="this.src='${v.thumbnail_url}'">
+                            <div class="revision-info">
+                                <h3 class="revision-title">${v.title || 'Untitled Video'}</h3>
+                                <p class="revision-meta">${v.channel_name || 'Unknown Channel'}</p>
+                                <a href="/revise?v=${v.video_id}" class="start-btn">Start Revision</a>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    grid.innerHTML = `
+                        <div style="grid-column: 1 / -1; text-align: center; padding: 3rem; background: rgba(255,255,255,0.02); border-radius: 16px; border: 1px dashed var(--card-border);">
+                            <p style="color: var(--text-secondary);">No decks revised on ${selectedDate}. Select another day or click again to clear.</p>
+                        </div>
+                    `;
+                }
+            };
+
+            try {
+                const [statsRes, activityRes] = await Promise.all([
+                    fetch('/api/revision/stats'),
+                    fetch('/api/revision/activity')
+                ]);
+                allVideos = await statsRes.json();
+                studyActivity = await activityRes.json();
+
+                loader.classList.add('hidden');
+
+                if (allVideos && allVideos.length > 0) {
+                    foldSection.classList.remove('hidden');
+                    renderStudyHeatmap();
+                    renderRevisionGrid();
+                } else {
+                    emptyState.classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error('Error loading revision stats:', error);
+                loader.innerHTML = '<p class="error-message">Failed to load revision hub.</p>';
+            }
+
+            // Sidebar Toggle Logic
+            const sidebar = document.querySelector('.sidebar');
+            const mainContent = document.querySelector('.main-content');
+            const toggleBtn = document.getElementById('sidebar-toggle');
+            
+            const setSidebarState = (collapsed) => {
+                if (collapsed) {
+                    sidebar.classList.add('collapsed');
+                    mainContent.classList.add('sidebar-collapsed');
+                } else {
+                    sidebar.classList.remove('collapsed');
+                    mainContent.classList.remove('sidebar-collapsed');
+                }
+                localStorage.setItem('sidebar-collapsed', collapsed);
+            };
+
+            // Init state
+            const isCollapsed = localStorage.getItem('sidebar-collapsed') === 'true';
+            setSidebarState(isCollapsed);
+
+            toggleBtn.addEventListener('click', () => {
+                const newState = !sidebar.classList.contains('collapsed');
+                setSidebarState(newState);
+            });
+
+            // Sidebar Expandable Logic
+            document.querySelectorAll('.expandable-trigger').forEach(trigger => {
+                trigger.addEventListener('click', () => {
+                    if (sidebar.classList.contains('collapsed')) {
+                        setSidebarState(false);
+                        setTimeout(() => {
+                            trigger.parentElement.classList.add('open');
+                        }, 100);
+                    } else {
+                        trigger.parentElement.classList.toggle('open');
+                    }
+                });
+            });
+
+            // Global Sidebar Deck Loader
+            async function loadSidebarDecks() {
+                const list = document.getElementById('sidebar-decks-list');
+                if (!list) return;
+                try {
+                    const response = await fetch('/api/revision/stats');
+                    const videos = await response.json();
+                    if (videos && videos.length > 0) {
+                        const hubLink = list.querySelector('a[href="/revision"]');
+                        list.innerHTML = '';
+                        list.appendChild(hubLink);
+                        
+                        videos.slice(0, 5).forEach(v => {
+                            const a = document.createElement('a');
+                            a.href = `/revise?v=${v.video_id}`;
+                            a.className = 'sidebar-link sub-link';
+                            a.style.fontSize = '0.75rem';
+                            a.style.whiteSpace = 'nowrap';
+                            a.style.overflow = 'hidden';
+                            a.style.textOverflow = 'ellipsis';
+                            a.title = v.title;
+                            a.innerHTML = `<span class="sidebar-link-text">${v.title || 'Untitled'}</span>`;
+                            list.appendChild(a);
+                        });
+                    }
+                } catch (e) {
+                    console.error('Error loading sidebar decks:', e);
+                }
+            }
+            loadSidebarDecks();
+        });
+    </script>
+</body>
+</html>

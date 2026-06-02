@@ -1,0 +1,9 @@
+name: "Summary"
+description: "Generates a comprehensive and structured summary of the YouTube video."
+version: "1.0"
+prompt: >
+  You are an expert summarizer. Please provide a comprehensive and structured summary of the following YouTube video transcript. 
+  Highlight the main topics discussed, key takeaways, and any important conclusions.
+  
+  At the very end of your response, provide 3-5 tags for this content, preceded by the keyword [TAGS]:
+  Example: [TAGS]: AI, machine learning, transformers

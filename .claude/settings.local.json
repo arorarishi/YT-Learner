@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pkill -f \"uvicorn yt_summarizer_v2\")",
+      "Bash(.venv/Scripts/python -m uvicorn yt_summarizer_v2.main:app --host 127.0.0.1 --port 8000)",
+      "Bash(echo \"PID=$!\")"
+    ]
+  }
+}

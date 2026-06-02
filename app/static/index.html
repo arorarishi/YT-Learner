@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="AI-Powered YouTube Summarizer using DeepSeek">
+    <title>DeepSeek Tube Summary</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/styles.css?v=2.1.2">
+</head>
+
+<body>
+    <div class="background-orbs">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+
+    <div class="app-layout">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1 class="sidebar-logo gradient-text">Summarizer</h1>
+                <button class="sidebar-toggle" id="sidebar-toggle">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" x2="21" y1="6" y2="6"/><line x1="3" x2="21" y1="12" y2="12"/><line x1="3" x2="21" y1="18" y2="18"/></svg>
+                </button>
+            </div>
+            <nav class="sidebar-nav">
+                <div class="nav-group">
+                    <h3 class="nav-label">Main</h3>
+                    <a href="/" class="sidebar-link active">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                        <span class="sidebar-link-text">New Summary</span>
+                    </a>
+                    <a href="/library" class="sidebar-link">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
+                        <span class="sidebar-link-text">Library</span>
+                    </a>
+                    <a href="/playlists" class="sidebar-link">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15V6M18.5 18a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM12 12H3M16 6H3M12 18H3"/></svg>
+                        <span class="sidebar-link-text">Playlists</span>
+                    </a>
+                </div>
+                <div class="nav-group expandable-group" id="decks-group">
+                    <button class="sidebar-link expandable-trigger">
+                        <div style="display: flex; align-items: center; gap: 0.75rem;">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                            <span class="sidebar-link-text">Study Decks</span>
+                        </div>
+                        <svg class="chevron-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+                    </button>
+                    <div class="expandable-content" id="sidebar-decks-list">
+                        <a href="/revision" class="sidebar-link sub-link">
+                            <span class="sidebar-link-text">Revision Hub</span>
+                        </a>
+                        <!-- Dynamic decks will be added here -->
+                    </div>
+                </div>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="container">
+                <header style="margin-bottom: 3rem;">
+                    <div class="logo-section">
+                        <h1 class="gradient-text">AI Video Summarizer</h1>
+                        <p class="subtitle">Transform any video into clear, actionable insights <span
+                                class="version-badge">v2.1.3</span></p>
+                    </div>
+                </header>
+
+                <!-- Summarize View -->
+                <div id="view-summarize" class="view-content">
+                    <section class="glass-card input-section">
+                        <form id="summarize-form">
+
+                            <div class="input-group">
+                                <input type="url" id="youtube-url" placeholder="Paste YouTube URL here..." required
+                                    autocomplete="off">
+                                <button type="submit" id="submit-btn">
+                                    <span class="btn-text">Get Subtitles</span>
+                                    <div class="loader hidden"></div>
+                                </button>
+                            </div>
+                            <div class="template-selector">
+                                <label class="radio-pill">
+                                    <input type="radio" name="template_type" value="summary" checked>
+                                    <span>Summary</span>
+                                </label>
+                                <label class="radio-pill">
+                                    <input type="radio" name="template_type" value="quiz">
+                                    <span>Quiz</span>
+                                </label>
+                                <label class="radio-pill">
+                                    <input type="radio" name="template_type" value="study_notes">
+                                    <span>Study Notes</span>
+                                </label>
+                                <label class="radio-pill">
+                                    <input type="radio" name="template_type" value="detailed_notes">
+                                    <span>Detailed Notes</span>
+                                </label>
+                                <label class="radio-pill">
+                                    <input type="radio" name="template_type" value="flash_cards">
+                                    <span>Flash Cards</span>
+                                </label>
+
+                            </div>
+                            <div id="error-message" class="error-message hidden"></div>
+                        </form>
+                    </section>
+
+                    <section id="results-section" class="glass-card results-section hidden">
+                        <div id="video-metadata" class="video-metadata hidden">
+                            <img id="meta-thumbnail" src="" alt="Video Thumbnail">
+                            <div class="meta-info">
+                                <h3 id="meta-title"></h3>
+                                <p id="meta-channel"></p>
+                            </div>
+                        </div>
+                        <details class="transcript-box" id="transcript-container">
+                            <summary>
+                                Show Transcript
+                                <span class="transcript-actions" id="transcript-actions">
+                                    <button type="button" id="copy-transcript-btn" class="transcript-copy-btn"
+                                        title="Copy Transcript">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                            stroke-linejoin="round" aria-hidden="true">
+                                            <rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect>
+                                            <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
+                                        </svg>
+                                        Copy Transcript
+                                    </button>
+                                    <button type="button" id="download-transcript-btn" class="transcript-download-btn"
+                                        title="Download Transcript">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                            stroke-linejoin="round" aria-hidden="true">
+                                            <path d="M12 15V3"></path>
+                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                            <path d="m7 10 5 5 5-5"></path>
+                                        </svg>
+                                    </button>
+                                </span>
+                            </summary>
+                            <div id="transcript-content" class="transcript-text"></div>
+                        </details>
+
+                        <hr class="section-divider">
+
+                        <div class="results-header">
+                            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                                <h2 id="results-title">Summary</h2>
+                                <div class="task-btn-group" style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.5rem; margin-top: 0.5rem;">
+                                    <button type="button" class="task-btn" onclick="generateSpecific('summary')" style="font-size: 0.75rem; padding: 0.5rem 0.25rem;">Summary</button>
+                                    <button type="button" class="task-btn" onclick="generateSpecific('quiz')" style="font-size: 0.75rem; padding: 0.5rem 0.25rem;">Quiz</button>
+                                    <button type="button" class="task-btn" onclick="generateSpecific('study_notes')" style="font-size: 0.75rem; padding: 0.5rem 0.25rem;">Notes</button>
+                                    <button type="button" class="task-btn" onclick="generateSpecific('detailed_notes')" style="font-size: 0.75rem; padding: 0.5rem 0.25rem;">Detailed</button>
+                                    <button type="button" class="task-btn" onclick="generateSpecific('flash_cards')" style="font-size: 0.75rem; padding: 0.5rem 0.25rem;">Cards</button>
+                                </div>
+                            </div>
+                            <button type="button" id="copy-btn" class="secondary-btn">Copy Markdown</button>
+                        </div>
+                        <div id="summary-content" class="markdown-body"></div>
+                    </section>
+                </div>
+
+                <footer style="text-align: center; margin-top: 4rem; padding-bottom: 2rem; color: var(--text-secondary);">
+                    <p>© 2026 AI Video Summarizer | Build with DeepSeek & FastAPI</p>
+                </footer>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="/static/script.js?v=2.1.2"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Sidebar Toggle Logic
+            const sidebar = document.querySelector('.sidebar');
+            const mainContent = document.querySelector('.main-content');
+            const toggleBtn = document.getElementById('sidebar-toggle');
+            
+            const setSidebarState = (collapsed) => {
+                if (collapsed) {
+                    sidebar.classList.add('collapsed');
+                    mainContent.classList.add('sidebar-collapsed');
+                } else {
+                    sidebar.classList.remove('collapsed');
+                    mainContent.classList.remove('sidebar-collapsed');
+                }
+                localStorage.setItem('sidebar-collapsed', collapsed);
+            };
+
+            // Init state
+            const isCollapsed = localStorage.getItem('sidebar-collapsed') === 'true';
+            setSidebarState(isCollapsed);
+
+            toggleBtn.addEventListener('click', () => {
+                const newState = !sidebar.classList.contains('collapsed');
+                setSidebarState(newState);
+            });
+
+            // Sidebar Expandable Logic
+            document.querySelectorAll('.expandable-trigger').forEach(trigger => {
+                trigger.addEventListener('click', () => {
+                    if (sidebar.classList.contains('collapsed')) {
+                        setSidebarState(false);
+                        setTimeout(() => {
+                            trigger.parentElement.classList.add('open');
+                        }, 100);
+                    } else {
+                        trigger.parentElement.classList.toggle('open');
+                    }
+                });
+            });
+
+            // Global Sidebar Deck Loader
+            async function loadSidebarDecks() {
+                const list = document.getElementById('sidebar-decks-list');
+                if (!list) return;
+                try {
+                    const response = await fetch('/api/revision/stats');
+                    const videos = await response.json();
+                    if (videos && videos.length > 0) {
+                        const hubLink = list.querySelector('a[href="/revision"]');
+                        list.innerHTML = '';
+                        list.appendChild(hubLink);
+                        
+                        videos.slice(0, 5).forEach(v => {
+                            const a = document.createElement('a');
+                            a.href = `/revise?v=${v.video_id}`;
+                            a.className = 'sidebar-link sub-link';
+                            a.style.fontSize = '0.75rem';
+                            a.style.whiteSpace = 'nowrap';
+                            a.style.overflow = 'hidden';
+                            a.style.textOverflow = 'ellipsis';
+                            a.title = v.title;
+                            a.innerHTML = `<span class="sidebar-link-text">${v.title || 'Untitled'}</span>`;
+                            list.appendChild(a);
+                        });
+                    }
+                } catch (e) {
+                    console.error('Error loading sidebar decks:', e);
+                }
+            }
+            loadSidebarDecks();
+        });
+    </script>
+</body>
+
+</html>
