@@ -122,3 +122,11 @@ python scripts/backfill.py --delay 1.0   # 1 second between requests (default: 0
 - Keep a `.env.example` file to document required environment variables such as `DEEPINFRA_API_KEY`.
 - This is still a local deployment: the app runs on `http://127.0.0.1:8000` on each user’s machine.
 - A simple hosted version check can be added later by publishing a small remote metadata file or endpoint with the latest package version.
+
+
+
+Start ser command
+
+```
+uvicorn app.main:app --host 127.0.0.1 --port 8000
+```
