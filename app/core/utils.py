@@ -1,3 +1,4 @@
+import time
 import yt_dlp
 from typing import Optional
 
@@ -40,8 +41,10 @@ def fetch_latest_video_id(channel_id: str) -> Optional[str]:
     }
     url = f"https://www.youtube.com/channel/{channel_id}/videos"
     try:
+        _t0 = time.perf_counter()
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=False)
+        print(f"LATENCY [yt-dlp/channel-latest {channel_id}]: {time.perf_counter()-_t0:.2f}s")
             # info['entries'] is a list, newest first
             if not info or 'entries' not in info or not info['entries']:
                 return None

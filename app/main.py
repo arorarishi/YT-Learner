@@ -2,6 +2,7 @@ import io
 import csv
 import os
 import re
+import time
 import traceback
 import yaml
 import requests
@@ -113,6 +114,7 @@ async def summarize_in_chunks(transcript: str, template: str, model_name: str, t
             chunk_prompt = f"{active_template}{chunk_info}\n\nTranscript Segment:\n{chunk}"
 
             try:
+                _t0 = time.perf_counter()
                 response = await client.chat.completions.create(
                     model=model_name,
                     messages=[
@@ -122,7 +124,7 @@ async def summarize_in_chunks(transcript: str, template: str, model_name: str, t
                     temperature=0.3,
                     max_tokens=3000 if template_type == "detailed_notes" else 1500
                 )
-                
+                print(f"LATENCY [LLM/{template_type} chunk {i+1}/{len(chunks)}]: {time.perf_counter()-_t0:.2f}s")
                 chunk_summary = response.choices[0].message.content
                 p_tokens = response.usage.prompt_tokens if response.usage else 0
                 c_tokens = response.usage.completion_tokens if response.usage else 0
@@ -181,9 +183,11 @@ class Video:
 
     def generate_transcript(self) -> Optional[str]:
         try:
+            _t0 = time.perf_counter()
             transcript_list = YouTubeTranscriptApi().list(self.video_id)
             transcript = list(transcript_list)[0]
             transcript_data = transcript.fetch()
+            print(f"LATENCY [YouTubeTranscriptApi.fetch/{self.video_id}]: {time.perf_counter()-_t0:.2f}s")
 
             def format_time(seconds: float) -> str:
                 h = int(seconds // 3600)
@@ -237,7 +241,9 @@ class Video:
     def fetch_metadata(self, url: str) -> Dict[str, Any]:
         headers = {'User-Agent': 'Mozilla/5.0'}
         try:
+            _t0 = time.perf_counter()
             response = requests.get(url, headers=headers, timeout=10)
+            print(f"LATENCY [HTTP/page-scrape {self.video_id}]: {time.perf_counter()-_t0:.2f}s")
             soup = BeautifulSoup(response.text, 'html.parser')
 
             title_meta = soup.find('meta', property='og:title')
@@ -252,7 +258,9 @@ class Video:
             thumbnail_blob = None
             if thumbnail_url:
                 try:
+                    _t1 = time.perf_counter()
                     img_response = requests.get(thumbnail_url, timeout=5)
+                    print(f"LATENCY [HTTP/thumbnail {self.video_id}]: {time.perf_counter()-_t1:.2f}s")
                     if img_response.status_code == 200:
                         thumbnail_blob = img_response.content
                 except Exception:
@@ -274,10 +282,12 @@ class Video:
         try:
             from yt_dlp import YoutubeDL
             opts = {"quiet": True, "no_warnings": True, "skip_download": True, "extract_flat": True}
+            _t0 = time.perf_counter()
             with YoutubeDL(opts) as ydl:
                 info = ydl.extract_info(
                     f"https://www.youtube.com/watch?v={self.video_id}", download=False
                 )
+            print(f"LATENCY [yt-dlp/description {self.video_id}]: {time.perf_counter()-_t0:.2f}s")
             return info.get("description") or ""
         except Exception:
             return ""
@@ -385,6 +395,7 @@ class Video:
             tokens_used = prompt_tokens + completion_tokens
         else:
             prompt = f"{template}\n\nTranscript:\n{transcript_text}"
+            _t0 = time.perf_counter()
             response = await client.chat.completions.create(
                 model=MODEL_NAME,
                 messages=[
@@ -394,6 +405,7 @@ class Video:
                 temperature=0.3,
                 max_tokens=3000 if template_type == "detailed_notes" else 1500
             )
+            print(f"LATENCY [LLM/{template_type} single-pass {self.video_id}]: {time.perf_counter()-_t0:.2f}s")
             summary = response.choices[0].message.content
             tokens_used = response.usage.total_tokens if response.usage else 0
             prompt_tokens = response.usage.prompt_tokens if response.usage else 0
@@ -458,8 +470,10 @@ class Playlist:
             'no_warnings': True,
             'dump_single_json': True,
         }
+        _t0 = time.perf_counter()
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=False)
+        print(f"LATENCY [yt-dlp/playlist-import {url}]: {time.perf_counter()-_t0:.2f}s")
 
         if 'entries' not in info:
             raise ValueError("Invalid playlist URL or unable to extract videos.")
